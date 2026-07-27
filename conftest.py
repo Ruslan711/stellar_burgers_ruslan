@@ -33,7 +33,9 @@ def create_driver(browser: str, headless: bool):
         options = FirefoxOptions()
         if headless:
             options.add_argument("--headless")
-        return webdriver.Firefox(options=options)
+        driver = webdriver.Firefox(options=options)
+        driver.set_window_size(1280, 800)
+        return driver
     else:
         raise ValueError(f"Browser {browser} not supported")
 

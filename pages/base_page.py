@@ -1,5 +1,6 @@
 import allure
 
+from selenium.common.exceptions import ElementClickInterceptedException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
@@ -18,7 +19,12 @@ class BasePage:
     def click_element(self, locator):
         """Нажать на элемент с явным ожиданием кликабельности"""
         element = self.wait.until(EC.element_to_be_clickable(locator))
-        element.click()
+        self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
+        try:
+            element.click()
+        except ElementClickInterceptedException:
+            # В Firefox иногда перекрывает другой элемент
+            self.driver.execute_script("arguments[0].click();", element)
 
     def input_text(self, locator, text):
         """Ввести текст в элемент"""
