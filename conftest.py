@@ -1,11 +1,15 @@
 import pytest
 import allure
+import requests
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
+from selenium.webdriver.remote.webdriver import WebDriver
 
-from config.environments import Environment, environments, common_users, print_environment_info
-from helpers import generate_user
+from typing import Generator
+
+from config.environments import Environment, EnvironmentConfig, environments, print_environment_info
+from helpers import UserData, generate_user
 from pages.main_page import MainPage
 from pages.login_page import LoginPage
 from pages.register_page import RegisterPage
@@ -13,14 +17,14 @@ from pages.forgot_password_page import ForgotPasswordPage
 from pages.profile_page import ProfilePage
 
 
-def pytest_addoption(parser):
+def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption("--browser", default="chrome", help="chrome/firefox")
     parser.addoption("--headless", action="store_true")
     parser.addoption("--env", default="dev", help="dev/stage")
     parser.addoption("--user-type", default=None)
 
 
-def create_driver(browser: str, headless: bool):
+def create_driver(browser: str, headless: bool) -> WebDriver:
     if browser == "chrome":
         options = ChromeOptions()
         options.add_argument("--log-level=3")
@@ -33,92 +37,123 @@ def create_driver(browser: str, headless: bool):
         options = FirefoxOptions()
         if headless:
             options.add_argument("--headless")
-        driver = webdriver.Firefox(options=options)
-        driver.set_window_size(1280, 800)
-        return driver
+        options.add_argument("--width=1280")
+        options.add_argument("--height=800")
+        return webdriver.Firefox(options=options)
     else:
         raise ValueError(f"Browser {browser} not supported")
 
 
 @pytest.fixture(scope="function")
-def driver(request):
+def driver(request: pytest.FixtureRequest) -> Generator[WebDriver, None, None]:
     browser = request.config.getoption("--browser")
     headless = request.config.getoption("--headless")
-    driver = create_driver(browser, headless)
-    yield driver
-    driver.quit()
+    browser_driver = create_driver(browser, headless)
+    yield browser_driver
+    browser_driver.quit()
 
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
-def pytest_runtest_makereport(item, call):
+def pytest_runtest_makereport(
+    item: pytest.Item,
+    call: pytest.CallInfo[None],
+) -> Generator[None, None, None]:
     outcome = yield
     report = outcome.get_result()
     if report.when == "call" and report.failed:
         driver = item.funcargs.get("driver")
         if driver:
-            allure.attach(
-                driver.get_screenshot_as_png(),
-                name="screenshot",
-                attachment_type=allure.attachment_type.PNG
-            )
+            try:
+                allure.attach(
+                    driver.get_screenshot_as_png(),
+                    name="screenshot",
+                    attachment_type=allure.attachment_type.PNG,
+                )
+            except Exception:
+                pass
 
 
-def pytest_configure(config):
+def pytest_configure(config: pytest.Config) -> None:
     env_name = config.getoption("--env")
     user_type = config.getoption("--user-type")
     print_environment_info(env_name, user_type)
 
 
 @pytest.fixture(scope="session")
-def env_config(request):
+def env_config(request: pytest.FixtureRequest) -> EnvironmentConfig:
     env_name = request.config.getoption("--env")
     return environments[Environment(env_name)]
 
 
-@pytest.fixture(scope="function")
-def user(request, env_config):
-    user_type = request.config.getoption("--user-type") or env_config.default_user
-    return common_users[user_type]
-
-
 @pytest.fixture
-def main_page(driver):
+def main_page(driver: WebDriver) -> MainPage:
     return MainPage(driver)
 
 
 @pytest.fixture
-def login_page(driver):
+def login_page(driver: WebDriver) -> LoginPage:
     return LoginPage(driver)
 
 
 @pytest.fixture
-def register_page(driver):
+def register_page(driver: WebDriver) -> RegisterPage:
     return RegisterPage(driver)
 
 
 @pytest.fixture
-def forgot_password_page(driver):
+def forgot_password_page(driver: WebDriver) -> ForgotPasswordPage:
     return ForgotPasswordPage(driver)
 
 
 @pytest.fixture
-def profile_page(driver):
+def profile_page(driver: WebDriver) -> ProfilePage:
     return ProfilePage(driver)
 
 
 @pytest.fixture
-def created_user(driver, env_config, register_page, login_page):
-    """Создать нового пользователя через UI"""
+def created_user(env_config: EnvironmentConfig) -> Generator[UserData, None, None]:
+    """Создать пользователя через API и удалить его после теста"""
+    api_url = f"{env_config.url}/api"
     user_data = generate_user()
-    register_page.open(env_config.url)
-    register_page.register(user_data["name"], user_data["email"], user_data["password"])
-    assert login_page.is_login_page_opened(), "После регистрации должна открыться страница входа"
-    return user_data
+    response = requests.post(
+        f"{api_url}/auth/register",
+        json=user_data,
+        timeout=20,
+    )
+
+    # email из трёх цифр может уже существовать — пробуем другой
+    for _ in range(5):
+        if response.status_code == 200:
+            break
+        user_data = generate_user()
+        response = requests.post(
+            f"{api_url}/auth/register",
+            json=user_data,
+            timeout=20,
+        )
+
+    response.raise_for_status()
+    user_data["access_token"] = response.json()["accessToken"]
+
+    yield user_data
+
+    requests.delete(
+        f"{api_url}/auth/user",
+        headers={"Authorization": user_data["access_token"]},
+        timeout=20,
+    )
 
 
 @pytest.fixture
-def authorized_user(driver, env_config, created_user, login_page, main_page):
-    """Авторизованный пользователь"""
+def authorized_user(
+    created_user: UserData,
+    login_page: LoginPage,
+    main_page: MainPage,
+    env_config: EnvironmentConfig,
+) -> UserData:
+    """Подготовить авторизованного пользователя для теста"""
+    main_page.open(env_config.url)
+    main_page.click_login_button()
     login_page.login(created_user["email"], created_user["password"])
-    assert main_page.is_main_page_opened(), "Не удалось авторизоваться"
+    main_page.find_element(main_page.assemble_title)
     return created_user

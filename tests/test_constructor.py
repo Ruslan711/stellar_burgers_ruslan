@@ -1,13 +1,20 @@
 import pytest
 import allure
 
+from config.environments import EnvironmentConfig
+from pages.main_page import MainPage
+
 
 @allure.feature("Конструктор")
 class TestConstructor:
 
     @pytest.mark.smoke
     @allure.title("Переход к разделу 'Булки'")
-    def test_open_buns_section(self, env_config, main_page):
+    def test_open_buns_section(
+        self,
+        env_config: EnvironmentConfig,
+        main_page: MainPage,
+    ) -> None:
         with allure.step("Открыть главную страницу"):
             main_page.open(env_config.url)
 
@@ -22,7 +29,11 @@ class TestConstructor:
 
     @pytest.mark.regression
     @allure.title("Переход к разделу 'Соусы'")
-    def test_open_sauces_section(self, env_config, main_page):
+    def test_open_sauces_section(
+        self,
+        env_config: EnvironmentConfig,
+        main_page: MainPage,
+    ) -> None:
         with allure.step("Открыть главную страницу"):
             main_page.open(env_config.url)
 
@@ -34,7 +45,11 @@ class TestConstructor:
 
     @pytest.mark.regression
     @allure.title("Переход к разделу 'Начинки'")
-    def test_open_fillings_section(self, env_config, main_page):
+    def test_open_fillings_section(
+        self,
+        env_config: EnvironmentConfig,
+        main_page: MainPage,
+    ) -> None:
         with allure.step("Открыть главную страницу"):
             main_page.open(env_config.url)
 

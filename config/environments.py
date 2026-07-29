@@ -6,7 +6,7 @@ class Environment(str, Enum):
     DEV = "dev"
     STAGE = "stage"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return {"dev": "Dev", "stage": "Stage"}[self]
 
 
@@ -17,27 +17,17 @@ class UserCredentials:
     password: str
 
 
-# Два пользователя с разными email (формат из задания)
+# Два пользователя с уникальными email (формат из задания)
 common_users = {
-    "user1": UserCredentials(
-        name="Ruslan Bochin",
-        email="ruslan_bochin_8_001@yandex.ru",
-        password="123456"
-    ),
-    "user2": UserCredentials(
-        name="Ivan Ivanov",
-        email="ivan_ivanov_8_002@yandex.ru",
-        password="123456"
-    ),
     "dev_user": UserCredentials(
         name="Ruslan Bochin",
         email="ruslan_bochin_8_001@yandex.ru",
-        password="123456"
+        password="123456",
     ),
     "stage_user": UserCredentials(
         name="Ivan Ivanov",
         email="ivan_ivanov_8_002@yandex.ru",
-        password="123456"
+        password="123456",
     ),
 }
 
@@ -48,7 +38,7 @@ class EnvironmentConfig:
     timeout: int
     default_user: str
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"- URL: {self.url}"
 
 
@@ -59,7 +49,7 @@ environments = {
 }
 
 
-def print_environment_info(env_name, user_type=None):
+def print_environment_info(env_name: str, user_type: str | None = None) -> None:
     """Вывод информации о тестовом окружении."""
     try:
         env = Environment(env_name)
