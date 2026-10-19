@@ -8,6 +8,8 @@ from pages.login_page import LoginPage
 from pages.main_page import MainPage
 from pages.register_page import RegisterPage
 
+pytestmark = pytest.mark.skip(reason="Сайт недоступен")
+
 
 @allure.feature("Авторизация")
 class TestLogin:

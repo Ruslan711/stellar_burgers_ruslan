@@ -1,0 +1,9 @@
+services:
+  tests:
+    build: .
+    shm_size: "2gb"
+    environment:
+      BROWSER: chrome
+      HEADLESS: "true"
+    volumes:
+      - ./allure-results:/app/allure-results

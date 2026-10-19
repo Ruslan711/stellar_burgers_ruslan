@@ -6,6 +6,8 @@ from helpers import generate_user
 from pages.login_page import LoginPage
 from pages.register_page import RegisterPage
 
+pytestmark = pytest.mark.skip(reason="Сайт недоступен")
+
 
 @allure.feature("Регистрация")
 class TestRegistration:

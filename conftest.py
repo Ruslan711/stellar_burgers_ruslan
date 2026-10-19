@@ -1,3 +1,5 @@
+import os
+from selenium.webdriver.chrome.service import Service
 import pytest
 import allure
 import requests
@@ -31,7 +33,15 @@ def create_driver(browser: str, headless: bool) -> WebDriver:
         options.add_experimental_option("excludeSwitches", ["enable-logging"])
         if headless:
             options.add_argument("--headless=new")
+            options.add_argument("--no-sandbox")
+            options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--window-size=1280,800")
+        if os.path.exists("/usr/bin/chromium"):
+            options.binary_location = "/usr/bin/chromium"
+            return webdriver.Chrome(
+                service=Service("/usr/bin/chromedriver"),
+                options=options,
+            )
         return webdriver.Chrome(options=options)
     elif browser == "firefox":
         options = FirefoxOptions()
