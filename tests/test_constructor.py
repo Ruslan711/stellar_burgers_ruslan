@@ -4,8 +4,6 @@ import allure
 from config.environments import EnvironmentConfig
 from pages.main_page import MainPage
 
-pytestmark = pytest.mark.skip(reason="Сайт недоступен")
-
 
 @allure.feature("Конструктор")
 class TestConstructor:
