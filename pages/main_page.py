@@ -39,15 +39,23 @@ class MainPage(BasePage):
 
     def click_buns_tab(self) -> None:
         """Перейти к разделу Булки"""
-        self.click_element(self.buns_tab)
+        self.select_tab(self.buns_tab)
 
     def click_sauces_tab(self) -> None:
         """Перейти к разделу Соусы"""
-        self.click_element(self.sauces_tab)
+        self.select_tab(self.sauces_tab)
 
     def click_fillings_tab(self) -> None:
         """Перейти к разделу Начинки"""
-        self.click_element(self.fillings_tab)
+        self.select_tab(self.fillings_tab)
+
+    def select_tab(self, locator: tuple[str, str]) -> None:
+        """Нажать на вкладку и дождаться, что она стала активной"""
+        self.click_element(locator)
+        self.wait.until(
+            lambda driver: "tab_tab_type_current"
+            in driver.find_element(*locator).get_attribute("class")
+        )
 
     def get_current_tab_text(self) -> str:
         """Получить текст активного раздела"""
