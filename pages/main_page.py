@@ -56,6 +56,9 @@ class MainPage(BasePage):
             lambda driver: "tab_tab_type_current"
             in driver.find_element(*locator).get_attribute("class")
         )
+        # Дополнительное ожидание для завершения плавного скролла в Docker
+        import time
+        time.sleep(0.5)
 
     def get_current_tab_text(self) -> str:
         """Получить текст активного раздела"""
