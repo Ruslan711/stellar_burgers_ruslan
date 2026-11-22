@@ -23,8 +23,8 @@
 
 ```bash
 # Клонировать репозиторий
-git clone https://github.com/Ruslan711/stellar-burgers_ruslan.git
-cd stellar-burgers-ruslan
+git clone https://github.com/Ruslan711/stellar_burgers_ruslan.git
+cd stellar_burgers_ruslan
 
 # Создать виртуальное окружение
 python -m venv venv
