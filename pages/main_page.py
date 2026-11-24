@@ -52,9 +52,9 @@ class MainPage(BasePage):
     def select_tab(self, locator: tuple[str, str]) -> None:
         """Нажать на вкладку и дождаться, что она стала активной"""
         self.click_element(locator)
+        # Ждем, пока прокрутка завершится и активная вкладка станет видимой
         self.wait.until(
-            lambda driver: "tab_tab_type_current"
-            in driver.find_element(*locator).get_attribute("class")
+            lambda driver: self.find_element(self.current_tab).is_displayed()
         )
 
     def get_current_tab_text(self) -> str:
