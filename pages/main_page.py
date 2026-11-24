@@ -14,6 +14,13 @@ class MainPage(BasePage):
     sauces_tab = (By.XPATH, "//div[contains(@class,'tab_tab')]/span[text()='Соусы']/..")
     fillings_tab = (By.XPATH, "//div[contains(@class,'tab_tab')]/span[text()='Начинки']/..")
     current_tab = (By.XPATH, "//div[contains(@class,'tab_tab_type_current')]")
+    ingredients_container = (
+        By.XPATH,
+        "//div[contains(@class,'BurgerIngredients_ingredients__menuContainer')]",
+    )
+    buns_title = (By.XPATH, "//h2[text()='Булки']")
+    sauces_title = (By.XPATH, "//h2[text()='Соусы']")
+    fillings_title = (By.XPATH, "//h2[text()='Начинки']")
     assemble_title = (By.XPATH, "//h1[text()='Соберите бургер']")
 
     def open(self, base_url: str) -> None:
@@ -39,23 +46,34 @@ class MainPage(BasePage):
 
     def click_buns_tab(self) -> None:
         """Перейти к разделу Булки"""
-        self.select_tab(self.buns_tab)
+        self.select_tab(self.buns_tab, self.buns_title)
 
     def click_sauces_tab(self) -> None:
         """Перейти к разделу Соусы"""
-        self.select_tab(self.sauces_tab)
+        self.select_tab(self.sauces_tab, self.sauces_title)
 
     def click_fillings_tab(self) -> None:
         """Перейти к разделу Начинки"""
-        self.select_tab(self.fillings_tab)
+        self.select_tab(self.fillings_tab, self.fillings_title)
 
-    def select_tab(self, locator: tuple[str, str]) -> None:
-        """Нажать на вкладку и дождаться, что она стала активной"""
-        self.click_element(locator)
-        # Ждем, пока прокрутка завершится и активная вкладка станет видимой
+    def select_tab(
+        self,
+        tab: tuple[str, str],
+        section_title: tuple[str, str],
+    ) -> None:
+        """Нажать на вкладку и дождаться окончания прокрутки к разделу"""
+        self.click_element(tab)
+        self.wait.until(lambda driver: self.is_section_at_top(section_title))
         self.wait.until(
-            lambda driver: self.find_element(self.current_tab).is_displayed()
+            lambda driver: "tab_tab_type_current"
+            in driver.find_element(*tab).get_attribute("class")
         )
+
+    def is_section_at_top(self, section_title: tuple[str, str]) -> bool:
+        """Проверить, что заголовок раздела прокручен к верху списка ингредиентов"""
+        container_top = self.find_element(self.ingredients_container).location["y"]
+        title_top = self.find_element(section_title).location["y"]
+        return abs(title_top - container_top) <= 2
 
     def get_current_tab_text(self) -> str:
         """Получить текст активного раздела"""
